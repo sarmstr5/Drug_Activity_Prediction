@@ -1,18 +1,18 @@
-# read in the data
-# partition/startify the data
-# do i need to do amything about the different columns?
-# test the releveance of the columns
 from pylab import *
 import pandas as pd
 import numpy as np
-from scipy.sparse import csc_matrix, coo_matrix
+import matplotlib.pylab as plt
 import sklearn as sk
 from sklearn.cross_validation import KFold
 from sklearn.naive_bayes import BernoulliNB, GaussianNB, MultinomialNB
+from sklearn import svm
+from scipy.sparse import csc_matrix, coo_matrix
 import scipy.sparse as sps
-import matplotlib.pylab as plt
 import scipy.io
 import sys
+
+
+
 from datetime import datetime as dt
 
 def feature_selection():
@@ -30,27 +30,39 @@ def graph_ROC():
 def f1_scoring():
     pass
 
-
-def naive_bayes(train_csc, train_result, test_csr):
-    nb_model = BernoulliNB()
-    nb_model.fit(train_csc.toarray(), train_result.binding)
-    prediction = nb_model.predict(test_csc.toarray())
+# I should change weights of bayes.  I want to weight the params to increase f1 score
+# http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.BernoulliNB.html#sklearn.naive_bayes.BernoulliNB
+# had test_csr and gave a different output
+def naive_bayes_fit(train_csc, train_result, test_csc, log_prediction):
+    bnb_model = BernoulliNB()
+    mnb_model = MultinomialNB()
+    bnb_model.fit(train_csc, train_result.binding)
+    if log_prediction:
+        prediction = bnb_model.predict_log_proba(test_csc.toarray()) #prediction using log probability
+    else:
+        prediction = bnb_model.predict(test_csc)
     return prediction
+
+def support_vector_machine_fit(train_csc, train_classes, test_csc):
+    svm_model = svm.SVC(kernel='linear', C=1.0) # C is penalty of error
+    svm_model.fit(train_csc, train_classes.binding)
+    predictions = svm_model.predict(test_csc)
+    return predictions
 
 def kNN():
     pass
 
-def print_results_to_csv(predictions):
+def print_results_to_csv(predictions, model):
     time = dt.now()
     hour, minute = str(time.hour), str(time.minute)
     if (len(minute) == 1):
         minute = '0' + minute
     if (len(hour) == 1):
         hour = '0' + hour
-    test_output = "test_results" + hour + minute + '.csv'
+    test_output = 'test_output/'+model+"test_results" + hour + minute + '.csv'
     with open(test_output, 'w') as results:
         for y in predictions:
-            results.write('{0}\n'.format(y.test_sentiment))
+            results.write('{0}\n'.format(y))
 
 def classify():
     pass
@@ -122,8 +134,11 @@ if __name__ == '__main__':
     # print(data_csc)
     # print(test_csc)
     print('Running Model')
-    class_predictions = naive_bayes(data_csc, binding_df, test_csc)
-    print_results_to_csv(class_predictions)
+    log_prediction = False
+    nb_predictions = naive_bayes_fit(data_csc, binding_df, test_csc, log_prediction)
+    print_results_to_csv(nb_predictions,'nb')
+    svm_predictions = support_vector_machine_fit(data_csc, binding_df, test_csc)
+    print_results_to_csv(svm_predictions, 'svm')
     # print(model)
     # first step is to figure out what the data is like
     # i should first check columns first
