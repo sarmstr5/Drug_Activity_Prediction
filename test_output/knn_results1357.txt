@@ -1,0 +1,1 @@
+scores	neighbors	folds	chi2_n_params	runs	steps	0.0000		0.0000		0.0000		0.0000		0.0000		0.0000		0.0000		0.0000		0.0000			5	10	100	1000	100

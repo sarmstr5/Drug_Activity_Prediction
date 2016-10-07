@@ -1,6 +1,6 @@
 from pylab import *
 import numpy as np
-from scipy.sparse import csr_matrix, csc_matrix
+from scipy.sparse import csr_matrix, csc_matrix, coo_matrix
 import itertools
 from sklearn import preprocessing
 NUMBER_OF_PARAMETERS = 100000
@@ -20,7 +20,8 @@ def training_to_list(file):
         param_num = 0
         for row in csv:
             row_list = row.split('\t')
-            if row_list[0] == 0:
+            print(row_list[0])
+            if int(row_list[0]) == 0:
                 neg_bind_list.append(int(row_list[0]))
                 neg_param_list.append(row_list[1])      #list of strings that represent column location of bools
             else:
@@ -29,6 +30,7 @@ def training_to_list(file):
 
             full_bind_list.append(int(row_list[0]))
             full_param_list.append(row_list[1])
+    print(len(pos_bind_list))
     return neg_bind_list, neg_param_list, pos_bind_list, pos_param_list, full_bind_list, full_param_list
 
 def test_to_list(file):
@@ -55,19 +57,19 @@ def jagged_list_to_csc(jagged_lists):
         row_lists.append(row)
         value_lists.append(value)
         i += 1
-    csr = create_csr(param_lists, row_lists, value_lists, i)
-    return csc_matrix(csr)
+    coo = create_coo(param_lists, row_lists, value_lists, i)
+    return csc_matrix(coo)
 
-def create_csr(param_lists, row_lists, value_lists, num_rows):
-    # in create CSR
+def create_coo(param_lists, row_lists, value_lists, num_rows):
+    # in create COO
     flattened_params = np.array(list(itertools.chain.from_iterable(param_lists)))
     flattened_rows = np.array(list(itertools.chain.from_iterable(row_lists)))
     flattened_values = np.array(list(itertools.chain.from_iterable(value_lists)))
-    sparse_csr = csr_matrix((flattened_values, (flattened_rows, flattened_params)), #three 1D lists
+    sparse_coo = coo_matrix((flattened_values, (flattened_rows, flattened_params)), #three 1D lists
                             shape=(num_rows, NUMBER_OF_PARAMETERS+1), #size of matrix, +1 bc of indexing,
                             dtype=np.bool)  # creates a boolean compressed sparse row matrix
 
-    return sparse_csr
+    return sparse_coo
 # t = training data, x = test data
 def write_csc_to_disk(csc, fn,):
     print('file {0} to disk'.format(fn))
@@ -84,6 +86,7 @@ def main():
     print('Starting File')
     full_run = True
     if(full_run == True):
+        print('Running Model')
         filename_pos = 'train_drugs_pos'
         filename_neg = 'train_drugs_neg'
         filename_full = 'train_drugs_full'
@@ -112,6 +115,12 @@ def main():
     neg_training_csc = jagged_list_to_csc(neg_jagged_list)
     pos_training_csc = jagged_list_to_csc(pos_jagged_list)
     full_training_csc = jagged_list_to_csc(full_jagged_list)
+
+    print(pos_training_csc.shape)
+    print(len(pos_binding_vector))
+    print(neg_training_csc.shape)
+    print(len(neg_binding_vector))
+
     test_csc = jagged_list_to_csc(jagged_test_list)
 
     # write cleaned data to file
